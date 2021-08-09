@@ -7,7 +7,7 @@ _All this script does is clone the specified repository and checks out all branc
 ## Installation
 
 ```bash
-$ git clone https://github.com/marcusfrdk/git-archiver
+git clone https://github.com/marcusfrdk/git-archiver
 ```
 
 ## Requirements
@@ -17,7 +17,7 @@ $ git clone https://github.com/marcusfrdk/git-archiver
 ## How to use
 
 ```bash
-$ python archive.py url
+python archive.py url
 ```
 
 All this script takes in is a url to your git repository. It will check for all branches and make sure you have downloaded them so you can use **every branch** without the existence of the remote repository.
