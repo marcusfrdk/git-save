@@ -2,6 +2,8 @@
 
 Download your old git repository that you no longer want to keep on your Github, Gitlab or other git hosts.
 
+_All this script does is clone the specified repository and checks out all branches to keep a copy of the branch locally_
+
 ## Installation
 
 ```bash
@@ -10,7 +12,7 @@ $ git clone https://github.com/marcusfrdk/git-archiver
 
 ## Requirements
 
-Since I only use modules from the standard library, anyone with `Python 3` and above can use this script.
+- Python 3
 
 ## How to use
 
