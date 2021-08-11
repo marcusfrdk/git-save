@@ -1,20 +1,9 @@
 import argparse, shutil, os, subprocess
 from urllib.parse import urlparse
-from compress import caller_path, output_path, output_folder_name
 
-description = "Download an entire git repository"
-usage = "main.py PATH"
-
-# Arguments
-parser = argparse.ArgumentParser(usage=usage, description=description)
-parser.add_argument("path")
-parser.add_argument("-f", "--force", action="store_true", help="bypass any confirmation prompt")
-parser.add_argument("-v", "--verbose", action="store_true", help="more logs in terminal")
-parser.add_argument("-nc", "--no-compress", action="store_true", help="skip compression")
-args = parser.parse_args()
-
-repo_name: str = args.path.split("/")[-1].split(".")[0] if args.path else ""
-repo_path = os.path.abspath(os.path.join(output_path, repo_name))
+caller_path = os.getcwd()
+output_folder_name = "archived-repos"
+output_folder_path = os.path.abspath(os.path.join(caller_path, output_folder_name))
 
 def shell(cmd: str, output: bool = True) -> str or None:
     try:
@@ -25,54 +14,43 @@ def shell(cmd: str, output: bool = True) -> str or None:
     except:
         return None
 
-def log(msg: str, force: bool = False) -> None:
-    if args.verbose or force:
-        print(msg)
+def verify_url(url: str) -> bool:
+    parsed = urlparse(url)
+    return url and bool(parsed.scheme and parsed.netloc and parsed.path)
 
-def clean():
-    for root, dirs, files in os.walk(output_path):
-        if len(dirs) == 0 and len(files) == 0:
-            shutil.rmtree(root)
+def require_confirmation(prompt: str) -> bool:
+    valid_responses = [ "y", "ye", "yes" ]
+    answer = input(f"{prompt} (y/n): ")
+    return answer.lower() in valid_responses
 
-def parse_input() -> str:
-    # Make sure path exists and is valid
-    parsed = urlparse(args.path)
-    if args.path and bool(parsed.scheme and parsed.netloc and parsed.path): # There probably is a better way of doing this
-        return args.path
-    else:
-        print("The specified url is invalid, please use another one")
-        exit(1)
+def get_repo_name(url: str) -> str:
+    return url.split("/")[-1].split(".")[0] if url else ""
 
-def require_confirmation(prompt: str) -> None:
-    if not args.force:
-        valid_responses = [ "y", "ye", "yes" ]
-        answer = input(f"{prompt} (y/n): ")
-        if answer.lower() not in valid_responses:
-            print("Exiting...")
-            clean()
-            exit(1)
+def get_repo_path(url: str) -> str:
+    return os.path.abspath(os.path.join(output_folder_path, get_repo_name(url)))
 
-def initialize() -> None:
-    if not os.path.exists(output_path): # No output folder
-        os.makedirs(output_path)
-    elif os.path.exists(repo_path): # Repository already exists
-        require_confirmation(f"""The folder "{repo_name}" already exists, delete it?""")
-        shutil.rmtree(repo_path)
-        os.makedirs(repo_path)
+def initialize():
+    if not os.path.exists(output_folder_path):
+        os.makedirs(output_folder_path)
 
-def clone_repo(path: str) -> None:
-    os.chdir(output_path)
+def clone_repo(repo_url: str, force: bool) -> None:
+    os.chdir(output_folder_path)
     try:
-        output = shell(f"git clone {path} {repo_name}")
-        if output[1] == "remote: Not Found":
-            raise Exception("Repository does not exist")
+        continue_cloning = True
+        if os.path.exists(get_repo_path(repo_url)) and not force:
+            continue_cloning = require_confirmation(f"""The folder "{get_repo_name(repo_url)}" already exists, do you want to overwrite?""")
+
+        if continue_cloning:
+            print(f"Cloning {get_repo_name(repo_url)}...")
+            output = shell(f"git clone {repo_url} {get_repo_name(repo_url)}")
+            if output[1] == "remote: Not Found":
+                raise Exception("Repository does not exist")
     except:
         print("Repository does not exist or is invalid")
-        clean()
         exit(1)
 
-def checkout_branches():
-    os.chdir(repo_path)
+def checkout_branches(repo_url: str):
+    os.chdir(get_repo_path(repo_url))
     try:
         branches = []
         output = shell("git fetch && git branch -a")
@@ -85,19 +63,30 @@ def checkout_branches():
         for branch in branches:
             branch_name = branch.split("/")[-1]
             shell(f"git checkout {branch} && git checkout -b {branch_name}")
-            log(f"Successfullt checked out {branch}")
+            print(f"Successfullt checked out {branch}")
         
-        log("Successfully checked out all branches")
+        print(f"""Successfully checked out all branches in "{get_repo_name(repo_url)}".""")
     except:
         print("Failed to check out all repos, please try running the script again")
         exit(1)
 
     
 def main():
-    path = parse_input()
+    description = "Download an entire git repository"
+    usage = "main.py "
+
+    # Arguments
+    parser = argparse.ArgumentParser(usage=usage, description=description)
+    parser.add_argument("urls", nargs="*")
+    parser.add_argument("-f", "--force", action="store_true")
+    args = parser.parse_args()
+
     initialize()
-    clone_repo(path)
-    checkout_branches()
+
+    for url in args.urls:
+        if verify_url(url):
+            clone_repo(url, args.force)
+            checkout_branches(url)
 
 if __name__ == "__main__":
     main()
