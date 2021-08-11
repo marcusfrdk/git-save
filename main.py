@@ -1,5 +1,6 @@
 import argparse, shutil, os, subprocess
 from urllib.parse import urlparse
+from urls import url_list
 
 caller_path = os.getcwd()
 output_folder_name = "archived-repos"
@@ -83,10 +84,19 @@ def main():
 
     initialize()
 
-    for url in args.urls:
+    urls = args.urls if args.urls else url_list
+
+    if len(urls) == 0:
+        print("No urls provided.")
+        print("You can provide urls by arguments or adding to the list in 'urls.py'.")
+        exit(1)
+
+    for url in urls:
         if verify_url(url):
             clone_repo(url, args.force)
             checkout_branches(url)
+        else:
+            print(f"""Url "{url}" is invalid.""")
 
 if __name__ == "__main__":
     main()
