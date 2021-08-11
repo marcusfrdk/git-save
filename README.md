@@ -1,8 +1,6 @@
 # Git Archiver
 
-Download your old git repository that you no longer want to keep on your Github, Gitlab or other git hosts.
-
-_All this script does is clone the specified repository and checks out all branches to keep a copy of the branch locally_
+Archive and save your git repository including all branches locally.
 
 ## Installation
 
@@ -12,22 +10,20 @@ git clone https://github.com/marcusfrdk/git-archiver
 
 ## Requirements
 
-- Python 3
+- Python 3.8 or above
 
 ## How to use
 
 ```bash
-python archive.py url
+python main.py URL
 ```
 
-All this script takes in is a url to your git repository. It will check for all branches and make sure you have downloaded them so you can use **every branch** without the existence of the remote repository.
+Run the script with one or many urls to your git repository and the script will checkout all branches and make sure you have saved all your code locally if you want to delete your remote repository.
 
-## Optional flags
+You can also provide the urls in the `urls.py` list and run the script with no arguments.
 
-### Compress (-c, --compress)
+## Flags
 
-Create a zip archive from the generated folder.
+### Force (-f, --force)
 
-### Verbose (-v, --verbose)
-
-Log activity from script
+The force flag skips any confirmation in the script.
