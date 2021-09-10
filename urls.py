@@ -2,11 +2,8 @@
 #
 # urls = [
 #   https://github.com/name/repo,
-#   https://github.com/name/repo2,
-#   https://github.com/name/repo3,
+#   https://gitlab.com/name/repo,
+#   ...
 # ]
 
-url_list = [
-    "https://github.com/marcusfrdk/auto-quadcopter-app.git",
-    "https://github.com/marcusfrdk/test.git"
-]
+url_list = []
