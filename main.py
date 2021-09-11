@@ -1,10 +1,27 @@
-import argparse, shutil, os, subprocess
+import argparse
+import os
+import subprocess
 from urllib.parse import urlparse
 from urls import url_list
+
+END = "\033[0m"
+COLORS = {
+    "red": "\033[31m",
+    "green": "\033[32m",
+    "yellow": "\033[33m",
+    "blue": "\033[34m"
+}
 
 caller_path = os.getcwd()
 output_folder_name = "archived-repos"
 output_folder_path = os.path.abspath(os.path.join(caller_path, output_folder_name))
+
+def colored_string(prefix: str, string: str, color: str = "green", output: bool = False) -> None:
+    value = f"[ {COLORS[color]}{prefix}{END} ] {string}"
+    if output:
+        return value
+    else:
+        print(value)
 
 def shell(cmd: str, output: bool = True) -> str or None:
     try:
@@ -21,7 +38,7 @@ def verify_url(url: str) -> bool:
 
 def require_confirmation(prompt: str) -> bool:
     valid_responses = [ "y", "ye", "yes" ]
-    answer = input(f"{prompt} (y/n): ")
+    answer = input(prompt)
     return answer.lower() in valid_responses
 
 def get_repo_name(url: str) -> str:
@@ -39,15 +56,17 @@ def clone_repo(repo_url: str, force: bool) -> None:
     try:
         continue_cloning = True
         if os.path.exists(get_repo_path(repo_url)) and not force:
-            continue_cloning = require_confirmation(f"""The folder "{get_repo_name(repo_url)}" already exists, do you want to overwrite?""")
+            continue_cloning = require_confirmation(colored_string("WARN", \
+                f"""The folder "{get_repo_name(repo_url)}" already exists, do you want to overwrite? (y/n) """,\
+                 "yellow", True))
 
         if continue_cloning:
-            print(f"Cloning {get_repo_name(repo_url)}...")
+            colored_string("INFO", f"Cloning {get_repo_name(repo_url)}...", "blue")
             output = shell(f"git clone {repo_url} {get_repo_name(repo_url)}")
             if output[1] == "remote: Not Found":
                 raise Exception("Repository does not exist")
     except:
-        print("Repository does not exist or is invalid")
+        colored_string("ERROR", "Repository does not exist or is invalid", "red")
         exit(1)
 
 def checkout_branches(repo_url: str):
@@ -62,18 +81,21 @@ def checkout_branches(repo_url: str):
 
         # Check out all branches
         for branch in branches:
-            branch_name = branch.split("/")[-1]
-            shell(f"git checkout {branch} && git checkout -b {branch_name}")
-            print(f"Successfullt checked out {branch}")
+            try:
+                branch_name = branch.split("/")[-1]
+                shell(f"git checkout {branch} && git checkout -b {branch_name}")
+                colored_string("SUCCESS", f"Successfully checked out {branch}")
+            except:
+                colored_string("ERROR", f"Failed to checkout branch {branch}", "red")
         
-        print(f"""Successfully checked out all branches in "{get_repo_name(repo_url)}".""")
+        colored_string("SUCCESS", f"""All branches are checked out in "{get_repo_name(repo_url)}".""")
     except:
-        print("Failed to check out all repos, please try running the script again")
+        colored_string("ERROR", "Failed to check out all repos.", "red")
         exit(1)
 
     
 def main():
-    description = "Download an entire git repository"
+    description = "Clone, checkout and save one or multiple git repositories at once with a single command."
     usage = "main.py "
 
     # Arguments
@@ -87,8 +109,8 @@ def main():
     urls = args.urls if args.urls else url_list
 
     if len(urls) == 0:
-        print("No urls provided.")
-        print("You can provide urls by arguments or adding to the list in 'urls.py'.")
+        colored_string("ERROR", "No urls provided.", "red")
+        colored_string("INFO", "You can provide urls by arguments or adding to the list in 'urls.py'.", "blue")
         exit(1)
 
     for url in urls:
@@ -96,7 +118,7 @@ def main():
             clone_repo(url, args.force)
             checkout_branches(url)
         else:
-            print(f"""Url "{url}" is invalid.""")
+            print("ERROR", f"""Url "{url}" is invalid.""", "red")
 
 if __name__ == "__main__":
     main()
